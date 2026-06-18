@@ -257,8 +257,10 @@
 // ── CONFIG ──────────────────────────────────────────────────
 // Replace with your Cloudflare Worker URL and auth token after deploying
 const PROXY_URL = "https://train-board.tandj-duo.workers.dev";
-// Token is read from URL hash: index.html#token=YOUR_TOKEN
-const AUTH_TOKEN = new URLSearchParams(location.hash.slice(1)).get("token") || "";
+// Token: read from URL hash, then persist to localStorage for Home Screen app
+const _hashToken = new URLSearchParams(location.hash.slice(1)).get("token");
+if (_hashToken) localStorage.setItem("train_board_token", _hashToken);
+const AUTH_TOKEN = _hashToken || localStorage.getItem("train_board_token") || "";
 
 const STATIONS = [
   {
