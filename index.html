@@ -257,7 +257,8 @@
 // ── CONFIG ──────────────────────────────────────────────────
 // Replace with your Cloudflare Worker URL and auth token after deploying
 const PROXY_URL = "https://train-board.tandj-duo.workers.dev";
-const AUTH_TOKEN = "b72166e0352f8bd178eea9919ed2ab1ff0e6b2228626d1aef63b007f1ac7649d";
+// Token is read from URL hash: index.html#token=YOUR_TOKEN
+const AUTH_TOKEN = new URLSearchParams(location.hash.slice(1)).get("token") || "";
 
 const STATIONS = [
   {
