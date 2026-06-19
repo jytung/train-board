@@ -440,15 +440,34 @@ function getSchedule() {
   return { active: true, intervalMs: 240_000 }; // every 4 min
 }
 
-function showInactive() {
-  for (const s of STATIONS) {
-    const el = document.getElementById(s.container);
-    el.classList.remove("loading-skeleton");
-    const sched = getSchedule();
-    el.innerHTML = `<div class="empty-msg">Prochain affichage à 5h00</div>`;
-  }
+async function showInactive() {
   const dot = document.getElementById("status-dot");
   const text = document.getElementById("status-text");
+
+  try {
+    const results = await Promise.all(
+      STATIONS.map((s) => fetchDepartures(s).then((deps) => ({ station: s, deps })))
+    );
+    for (const { station, deps } of results) {
+      const el = document.getElementById(station.container);
+      el.classList.remove("loading-skeleton");
+      const allDeps = Object.values(deps).flat().sort((a, b) => a.departureTime - b.departureTime);
+      if (allDeps.length > 0) {
+        const first = allDeps[0];
+        const hhmm = first.departureTime.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+        el.innerHTML = `<div class="empty-msg">Premier train à ${hhmm} → ${escapeHtml(first.destination)}</div>`;
+      } else {
+        el.innerHTML = `<div class="empty-msg">Aucun train prévu</div>`;
+      }
+    }
+  } catch (e) {
+    for (const s of STATIONS) {
+      const el = document.getElementById(s.container);
+      el.classList.remove("loading-skeleton");
+      el.innerHTML = `<div class="empty-msg">En veille</div>`;
+    }
+  }
+
   dot.className = "status-dot";
   dot.style.background = "#4a5568";
   text.textContent = "En veille";
