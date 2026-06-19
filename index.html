@@ -22,18 +22,15 @@
 
   .stations {
     flex: 1;
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     min-height: 0;
   }
 
   .station {
-    width: 50%;
-    flex: 0 0 50%;
     display: flex;
     flex-direction: column;
     padding: 2vh 2vw;
-    position: relative;
     min-height: 0;
     overflow: hidden;
   }
@@ -79,10 +76,8 @@
   }
 
   .departures {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
     gap: 1vh;
   }
 
