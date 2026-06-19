@@ -1,9 +1,6 @@
 # Train Board
 
-A real-time train departure dashboard designed to run full-screen on a wall-mounted iPad. Displays upcoming departures for two stations in the Paris (Ile-de-France) region:
-
-- **Line L** at Courbevoie
-- **Tramway T2** at Les Fauvelles
+A real-time train departure dashboard designed to run full-screen on a wall-mounted iPad. 
 
 Also shows live disruption alerts per line and current weather in Courbevoie.
 
@@ -37,44 +34,6 @@ The IDFM API does not support CORS, so browsers block direct requests. The Cloud
 | Train departures | IDFM PRIM Stop Monitoring API | 30s (commute), 3-4 min (off-peak) |
 | Disruption alerts | IDFM PRIM General Message API | Every 5 min |
 | Weather | Open-Meteo API (free, no key) | Every 10 min |
-
-## Refresh schedule
-
-The dashboard automatically adjusts its refresh rate to stay under the IDFM free tier limit (1,000 API calls/day):
-
-| Window | Interval | ~Calls/day |
-|---|---|---|
-| Mon-Fri 08:15-09:45 (commute) | 30 seconds | 360 |
-| Mon-Fri 05:00-01:00 (rest) | 4 minutes | 420 |
-| Sat-Sun 05:00-01:00 | 3 minutes | 800 |
-| 01:00-05:00 (no trains) | Off | 0 |
-
-## Security
-
-The worker is protected by three layers:
-
-1. **Bearer token** — requests without the correct `Authorization` header get 401
-2. **Origin check** — only requests from the GitHub Pages origin are accepted
-3. **Allowlists** — only the two configured stops and two line refs can be queried
-
-The auth token is not in the source code. It is passed via URL hash on first visit (`#token=...`) and persisted to `localStorage`. The hash fragment is never sent to GitHub servers.
-
-Secrets stored in Cloudflare:
-
-| Secret | Purpose |
-|---|---|
-| `IDFM_API_KEY` | IDFM PRIM API authentication |
-| `AUTH_TOKEN` | Bearer token for worker requests |
-| `ALLOWED_ORIGIN` | GitHub Pages origin for CORS |
-
-## IDFM stop and line references
-
-| Station | Type | Reference |
-|---|---|---|
-| Les Fauvelles (T2) | StopPoint | `STIF:StopPoint:Q:43729:` |
-| Courbevoie (L) | StopArea | `STIF:StopArea:SP:43118:` |
-| Tramway T2 | Line | `STIF:Line::C01390:` |
-| Transilien L | Line | `STIF:Line::C01740:` |
 
 ## Setup
 
