@@ -168,6 +168,32 @@
     padding-left: 0.5vw;
   }
 
+  .alert-banner:empty {
+    display: none;
+  }
+
+  .alert-banner {
+    margin-bottom: 0.8vh;
+  }
+
+  .alert-msg {
+    background: #2d1a1a;
+    border: 1px solid #7f1d1d;
+    border-radius: 0.8vh;
+    padding: 0.6vh 1.5vw;
+    font-size: 1.8vh;
+    color: #fca5a5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .alert-msg.info {
+    background: #1a2333;
+    border-color: #1e3a5f;
+    color: #93c5fd;
+  }
+
   .empty-msg {
     color: #4a5568;
     font-size: 2.5vh;
@@ -254,6 +280,7 @@
       <span class="line-badge line-L">L</span>
       <span class="station-name">Courbevoie</span>
     </div>
+    <div class="alert-banner" id="alerts-l"></div>
     <div class="departures loading-skeleton" id="deps-l">
       <div class="departure-row"><span class="departure-dest">&nbsp;</span></div>
       <div class="departure-row"><span class="departure-dest">&nbsp;</span></div>
@@ -265,6 +292,7 @@
       <span class="line-badge line-T2">T2</span>
       <span class="station-name">Les Fauvelles</span>
     </div>
+    <div class="alert-banner" id="alerts-t2"></div>
     <div class="departures loading-skeleton" id="deps-t2">
       <div class="departure-row"><span class="departure-dest">&nbsp;</span></div>
       <div class="departure-row"><span class="departure-dest">&nbsp;</span></div>
@@ -291,16 +319,64 @@ const STATIONS = [
   {
     id: "t2",
     monitoringRef: "STIF:StopPoint:Q:43729:",
+    lineRef: "STIF:Line::C01390:",
     container: "deps-t2",
+    alertContainer: "alerts-t2",
   },
   {
     id: "l",
     monitoringRef: "STIF:StopArea:SP:43118:",
+    lineRef: "STIF:Line::C01740:",
     container: "deps-l",
+    alertContainer: "alerts-l",
   },
 ];
 
 const TRAINS_PER_DIRECTION = 2;
+
+// ── ALERTS ──────────────────────────────────────────────────
+async function fetchAlerts(station) {
+  const url = `${PROXY_URL}?endpoint=general-message&LineRef=${encodeURIComponent(station.lineRef)}`;
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+  });
+  if (!resp.ok) return [];
+  const data = await resp.json();
+
+  const messages =
+    data?.Siri?.ServiceDelivery?.GeneralMessageDelivery?.[0]
+      ?.InfoMessage ?? [];
+
+  return messages.map((msg) => {
+    const content = msg.Content?.Message?.[0]?.MessageText?.value
+      ?? msg.Content?.Message?.[0]?.MessageType ?? "";
+    const type = msg.InfoMessageIdentifier?.value?.includes("Perturbation") ? "disruption" : "info";
+    return { text: content, type };
+  }).filter((m) => m.text);
+}
+
+function renderAlerts(containerId, alerts) {
+  const el = document.getElementById(containerId);
+  if (alerts.length === 0) {
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = alerts.slice(0, 2).map((a) =>
+    `<div class="alert-msg ${a.type === "info" ? "info" : ""}">${escapeHtml(a.text)}</div>`
+  ).join("");
+}
+
+async function refreshAlerts() {
+  for (const s of STATIONS) {
+    try {
+      const alerts = await fetchAlerts(s);
+      renderAlerts(s.alertContainer, alerts);
+    } catch (e) {}
+  }
+}
+
+refreshAlerts();
+setInterval(refreshAlerts, 300_000); // every 5 min
 
 // ── FETCH ───────────────────────────────────────────────────
 async function fetchDepartures(station) {

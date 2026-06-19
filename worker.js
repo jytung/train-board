@@ -11,6 +11,11 @@ const ALLOWED_STOPS = [
   "STIF:StopArea:SP:43118:",
 ];
 
+const ALLOWED_LINES = [
+  "STIF:Line::C01390:",
+  "STIF:Line::C01740:",
+];
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -35,16 +40,22 @@ export default {
     }
 
     const url = new URL(request.url);
-    const monitoringRef = url.searchParams.get("MonitoringRef");
-    if (!monitoringRef) {
-      return json({ error: "MonitoringRef required" }, 400);
-    }
+    const endpoint = url.searchParams.get("endpoint") || "stop-monitoring";
 
-    if (!ALLOWED_STOPS.includes(monitoringRef)) {
-      return json({ error: "Stop not allowed" }, 403);
+    let apiUrl;
+    if (endpoint === "general-message") {
+      const lineRef = url.searchParams.get("LineRef");
+      if (!lineRef || !ALLOWED_LINES.includes(lineRef)) {
+        return json({ error: "Line not allowed" }, 403);
+      }
+      apiUrl = `https://prim.iledefrance-mobilites.fr/marketplace/general-message?LineRef=${encodeURIComponent(lineRef)}`;
+    } else {
+      const monitoringRef = url.searchParams.get("MonitoringRef");
+      if (!monitoringRef || !ALLOWED_STOPS.includes(monitoringRef)) {
+        return json({ error: "Stop not allowed" }, 403);
+      }
+      apiUrl = `https://prim.iledefrance-mobilites.fr/marketplace/stop-monitoring?MonitoringRef=${encodeURIComponent(monitoringRef)}`;
     }
-
-    const apiUrl = `https://prim.iledefrance-mobilites.fr/marketplace/stop-monitoring?MonitoringRef=${encodeURIComponent(monitoringRef)}`;
 
     const resp = await fetch(apiUrl, {
       headers: { apiKey: env.IDFM_API_KEY },
