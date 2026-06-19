@@ -194,6 +194,29 @@
     line-height: 1;
   }
 
+  #weather {
+    font-size: 2.5vh;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.8vw;
+  }
+
+  #weather .temp {
+    font-size: 3.5vh;
+    font-weight: 700;
+    color: #e8ecf1;
+  }
+
+  #weather .weather-icon {
+    font-size: 3.5vh;
+  }
+
+  #weather .weather-detail {
+    font-size: 1.8vh;
+    color: #64748b;
+  }
+
   .status-dot {
     display: inline-block;
     width: 1vh;
@@ -250,6 +273,7 @@
 
 <div class="status-bar">
   <span><span class="status-dot loading" id="status-dot"></span> <span id="status-text">Chargement...</span></span>
+  <span id="weather"></span>
   <span id="clock"></span>
 </div>
 
@@ -419,6 +443,53 @@ function updateClock() {
     { hour: "2-digit", minute: "2-digit" }
   );
 }
+
+// ── WEATHER ─────────────────────────────────────────────────
+const WMO_ICONS = {
+  0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+  45: "🌫️", 48: "🌫️",
+  51: "🌦️", 53: "🌦️", 55: "🌧️",
+  56: "🌧️", 57: "🌧️",
+  61: "🌧️", 63: "🌧️", 65: "🌧️",
+  66: "🌧️", 67: "🌧️",
+  71: "🌨️", 73: "🌨️", 75: "🌨️", 77: "🌨️",
+  80: "🌦️", 81: "🌧️", 82: "🌧️",
+  85: "🌨️", 86: "🌨️",
+  95: "⛈️", 96: "⛈️", 99: "⛈️",
+};
+
+const WMO_LABELS = {
+  0: "Dégagé", 1: "Peu nuageux", 2: "Partiellement nuageux", 3: "Couvert",
+  45: "Brouillard", 48: "Brouillard givrant",
+  51: "Bruine légère", 53: "Bruine", 55: "Bruine forte",
+  61: "Pluie légère", 63: "Pluie", 65: "Pluie forte",
+  71: "Neige légère", 73: "Neige", 75: "Neige forte",
+  80: "Averses légères", 81: "Averses", 82: "Averses fortes",
+  95: "Orage", 96: "Orage grêle", 99: "Orage grêle fort",
+};
+
+async function fetchWeather() {
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=48.8966&longitude=2.2567&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Paris&forecast_days=1";
+  const resp = await fetch(url);
+  if (!resp.ok) return;
+  const data = await resp.json();
+  const cur = data.current;
+  const daily = data.daily;
+  const code = cur.weather_code;
+  const temp = Math.round(cur.temperature_2m);
+  const hi = Math.round(daily.temperature_2m_max[0]);
+  const lo = Math.round(daily.temperature_2m_min[0]);
+  const icon = WMO_ICONS[code] || "🌡️";
+  const label = WMO_LABELS[code] || "";
+
+  document.getElementById("weather").innerHTML =
+    `<span class="weather-icon">${icon}</span>` +
+    `<span class="temp">${temp}°</span>` +
+    `<span class="weather-detail">${label}<br>${lo}° / ${hi}°</span>`;
+}
+
+fetchWeather();
+setInterval(fetchWeather, 600_000); // refresh weather every 10 min
 
 // ── SCHEDULE ────────────────────────────────────────────────
 function getSchedule() {
