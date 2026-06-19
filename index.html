@@ -426,20 +426,18 @@ function getSchedule() {
   const day = now.getDay(); // 0=Sun, 6=Sat
   const hhmm = now.getHours() * 60 + now.getMinutes();
   const isWeekend = day === 0 || day === 6;
+  // Active 5:00–1:00 (next day): hhmm >= 300 OR hhmm < 60
+  const inService = hhmm >= 300 || hhmm < 60;
+
+  if (!inService) return { active: false, intervalMs: null };
 
   if (isWeekend) {
-    if (hhmm >= 420 && hhmm < 1380) { // 7:00–23:00, every 2 min
-      return { active: true, intervalMs: 120_000 };
-    }
-  } else {
-    if (hhmm >= 495 && hhmm < 585) { // 8:15–9:45, every 30s
-      return { active: true, intervalMs: 30_000 };
-    }
-    if (hhmm >= 420 && hhmm < 1380) { // 7:00–23:00 (outside commute), every 3 min
-      return { active: true, intervalMs: 180_000 };
-    }
+    return { active: true, intervalMs: 180_000 }; // every 3 min
   }
-  return { active: false, intervalMs: null };
+  if (hhmm >= 495 && hhmm < 585) { // 8:15–9:45, every 30s
+    return { active: true, intervalMs: 30_000 };
+  }
+  return { active: true, intervalMs: 240_000 }; // every 4 min
 }
 
 function showInactive() {
@@ -447,10 +445,7 @@ function showInactive() {
     const el = document.getElementById(s.container);
     el.classList.remove("loading-skeleton");
     const sched = getSchedule();
-    const day = new Date().getDay();
-    const isWeekend = day === 0 || day === 6;
-    const nextWindow = isWeekend ? "7h00" : "8h15";
-    el.innerHTML = `<div class="empty-msg">Prochain affichage à ${nextWindow}</div>`;
+    el.innerHTML = `<div class="empty-msg">Prochain affichage à 5h00</div>`;
   }
   const dot = document.getElementById("status-dot");
   const text = document.getElementById("status-text");
