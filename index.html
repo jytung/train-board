@@ -427,6 +427,8 @@ async function fetchDepartures(station) {
 }
 
 // ── RENDER ──────────────────────────────────────────────────
+const cachedData = {};
+
 function formatCountdown(diffMin) {
   if (diffMin <= 0) return "à quai";
   if (diffMin === 1) return "1 min";
@@ -440,10 +442,23 @@ function timeClass(diffMin) {
 }
 
 function renderStation(containerId, grouped) {
+  cachedData[containerId] = grouped;
+  renderStationFromCache(containerId);
+}
+
+function renderStationFromCache(containerId) {
+  const grouped = cachedData[containerId];
+  if (!grouped) return;
+
   const el = document.getElementById(containerId);
   el.classList.remove("loading-skeleton");
 
-  const directions = Object.keys(grouped);
+  const now = new Date();
+  const directions = Object.keys(grouped).filter((dir) => {
+    grouped[dir] = grouped[dir].filter((d) => d.departureTime > now);
+    return grouped[dir].length > 0;
+  });
+
   if (directions.length === 0) {
     el.innerHTML = '<div class="empty-msg">Aucun prochain passage</div>';
     return;
@@ -454,7 +469,8 @@ function renderStation(containerId, grouped) {
       const deps = grouped[dir];
       const dirLabel = deps[0].destination;
       const rows = deps.map((d, i) => {
-        const cls = timeClass(d.diffMin);
+        const diffMin = Math.round((d.departureTime - now) / 60_000);
+        const cls = timeClass(diffMin);
         const hhmm = d.departureTime.toLocaleTimeString("fr-FR", {
           hour: "2-digit",
           minute: "2-digit",
@@ -464,7 +480,7 @@ function renderStation(containerId, grouped) {
             <span class="departure-index">${i === 0 ? "▶" : " "}</span>
             ${d.platform ? `<span class="departure-platform">Voie ${escapeHtml(d.platform)}</span>` : ""}
             <span class="departure-time ${cls}">
-              <span class="countdown">${formatCountdown(d.diffMin)}</span>
+              <span class="countdown">${formatCountdown(diffMin)}</span>
               <span class="eta">${hhmm}</span>
             </span>
           </div>`;
@@ -653,6 +669,13 @@ scheduleLoop();
 setInterval(scheduleLoop, 30_000);
 updateClock();
 setInterval(updateClock, 10_000);
+
+function refreshCountdowns() {
+  for (const s of STATIONS) {
+    if (cachedData[s.container]) renderStationFromCache(s.container);
+  }
+}
+setInterval(refreshCountdowns, 10_000);
 </script>
 </body>
 </html>
